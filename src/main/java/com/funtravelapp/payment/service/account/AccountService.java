@@ -27,4 +27,12 @@ public class AccountService {
         return opt.orElse(null);
     }
 
+    public Account update(Account account){
+        return repository.save(account);
+    }
+
+    public void delete(int id){
+        repository.deleteById(id);
+    }
+
 }
