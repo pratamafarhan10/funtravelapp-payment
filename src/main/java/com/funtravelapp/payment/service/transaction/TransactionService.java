@@ -22,8 +22,8 @@ public class TransactionService {
         return repository.save(transaction);
     }
 
-    public Transaction updateStatus(int id, String status){
-        return repository.updateStatus(id, status);
+    public Transaction updateStatus(int id, TransactionStatusEnum status){
+        return repository.updateStatus(id, status.toString());
     }
 
     public boolean updateInvoiceStatus(int id, String status){
@@ -37,6 +37,6 @@ public class TransactionService {
 
     public Transaction getById(int id){
         Optional<Transaction> opt = repository.findById(id);
-        return opt.orElse(null);
+        return opt.orElseThrow();
     }
 }

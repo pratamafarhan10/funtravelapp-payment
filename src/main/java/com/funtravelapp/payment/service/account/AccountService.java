@@ -24,7 +24,7 @@ public class AccountService {
     public Account getById(int id){
         Optional<Account> opt = repository.findById(id);
 
-        return opt.orElse(null);
+        return opt.orElseThrow();
     }
 
     public Account update(Account account){
