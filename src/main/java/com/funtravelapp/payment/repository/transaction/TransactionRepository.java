@@ -19,8 +19,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
 
     @Modifying
     @Query(
-            value = "UPDATE transaction set is_invoice_sent = :status WHERE id = :id",
+            value = "UPDATE transaction set is_invoice_sent = :status WHERE order_id = :orderId",
             nativeQuery = true
     )
-    int updateInvoiceStatus(@Param("id") int id, @Param("status") String status);
+    int updateInvoiceStatus(@Param("orderId") int orderId, @Param("status") String status);
 }

@@ -6,6 +6,7 @@ import com.funtravelapp.payment.service.transaction.TransactionStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,9 +17,12 @@ public class TransactionController {
     @Autowired
     TransactionService service;
 
-    @PostMapping("/create")
-    public Transaction create(Transaction transaction) {
-        return service.create(transaction);
+    @KafkaListener(
+            topics = "UpdateStatusPayment",
+            groupId = "UpdateStatusPayment-1"
+    )
+    public void create(String data) {
+        service.create(data);
     }
 
     @PostMapping("/update-status/{id}")
@@ -31,9 +35,13 @@ public class TransactionController {
         }
     }
 
-    @PostMapping("/update-invoice-status/{id}")
-    public boolean updateInvoiceStatus(@PathVariable("id") int id, @RequestParam("status") String status) {
-        return service.updateInvoiceStatus(id, status);
+    //    @PostMapping("/update-invoice-status/{id}")
+    @KafkaListener(
+            topics = "UpdateNotifStatus",
+            groupId = "UpdateNotifStatus-1"
+    )
+    public void updateInvoiceStatus(String data) {
+        service.updateInvoiceStatus(data);
     }
 
     @GetMapping("/all")

@@ -16,4 +16,14 @@ public class KafkaTopicConfig {
     public NewTopic createNotifTopic(){
         return TopicBuilder.name("CreateNotif").build();
     }
+
+    @Bean
+    public NewTopic updateNotifStatus(){
+        return TopicBuilder.name("UpdateNotifStatus").build();
+    }
+
+    @Bean
+    public NewTopic updateStatusPayment(){
+        return TopicBuilder.name("UpdateStatusPayment").build();
+    }
 }
