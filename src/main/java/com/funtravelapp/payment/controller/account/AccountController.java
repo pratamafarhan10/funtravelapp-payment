@@ -1,6 +1,8 @@
 package com.funtravelapp.payment.controller.account;
 
+import com.funtravelapp.payment.dto.account.CreateAccountRequest;
 import com.funtravelapp.payment.model.account.Account;
+import com.funtravelapp.payment.responseMapper.ResponseMapper;
 import com.funtravelapp.payment.service.account.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,33 +19,36 @@ public class AccountController {
     AccountService accountService;
 
     @PostMapping("/create")
-    public Account create(Account account) {
-        return accountService.create(account);
+    public ResponseEntity<?> create(@RequestBody CreateAccountRequest request) {
+        try {
+            return ResponseMapper.ok(null, accountService.create(request));
+        }catch (Exception e){
+            return ResponseMapper.badRequest(e.getMessage(), null);
+        }
     }
 
     @GetMapping("/all")
-    public List<Account> getAll() {
-        return accountService.getAll();
+    public ResponseEntity<?> getAll() {
+        return ResponseMapper.ok(null, accountService.getAll());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable("id") int id) {
         try {
-            return ResponseEntity.ok(accountService.getById(id));
+            return ResponseMapper.ok(null, accountService.getById(id));
         } catch (NoSuchElementException e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseMapper.badRequest(e.getMessage(), null);
         }
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<?> update(@PathVariable("id") int id, @RequestBody Account account){
-        account.setId(id);
+    public ResponseEntity<?> update(@PathVariable("id") int id, @RequestBody CreateAccountRequest account){
         try{
-            return ResponseEntity.ok(accountService.update(account));
+            return ResponseMapper.ok(null, accountService.update(id, account));
         }catch (Exception e){
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseMapper.badRequest(e.getMessage(), null);
         }
     }
 
@@ -51,10 +56,10 @@ public class AccountController {
     public ResponseEntity<?> delete(@PathVariable("id") int id){
         try {
             accountService.delete(id);
-            return ResponseEntity.ok(null);
+            return ResponseMapper.ok(null, null);
         }catch (Exception e){
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseMapper.badRequest(e.getMessage(), null);
         }
     }
 }

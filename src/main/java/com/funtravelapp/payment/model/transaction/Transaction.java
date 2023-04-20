@@ -12,14 +12,18 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Integer id;
-    @Column(name = "user_id")
-    private Integer userId;
-    @Column(name = "order_id")
-    private Integer orderId;
-    @Column(name = "account_id")
-    private Integer accountId;
+    @Column(name = "customer_id")
+    private Integer customerId;
+    @Column(name = "seller_id")
+    private Integer sellerId;
+    @Column(name = "customer_acc")
+    private Integer customerAcc;
+    @Column(name = "seller_acc")
+    private Integer sellerAcc;
+    @Column(name = "chaining_id")
+    private Integer chainingId;
     @Column(name = "amount")
-    private BigDecimal amount;
+    private Integer amount;
     @Column(name = "status")
     private String status;
     @Column(name = "date")
@@ -30,10 +34,12 @@ public class Transaction {
     public Transaction() {
     }
 
-    public Transaction(Integer userId, Integer orderId, Integer accountId, BigDecimal amount, String status, LocalDate date, String isInvoiceSent) {
-        this.userId = userId;
-        this.orderId = orderId;
-        this.accountId = accountId;
+    public Transaction(Integer customerId, Integer sellerId, Integer customerAcc, Integer sellerAcc, Integer chainingId, Integer amount, String status, LocalDate date, String isInvoiceSent) {
+        this.customerId = customerId;
+        this.sellerId = sellerId;
+        this.customerAcc = customerAcc;
+        this.sellerAcc = sellerAcc;
+        this.chainingId = chainingId;
         this.amount = amount;
         this.status = status;
         this.date = date;
@@ -48,35 +54,51 @@ public class Transaction {
         this.id = id;
     }
 
-    public Integer getUserId() {
-        return userId;
+    public Integer getCustomerId() {
+        return customerId;
     }
 
-    public void setUserId(Integer userId) {
-        this.userId = userId;
+    public void setCustomerId(Integer customerId) {
+        this.customerId = customerId;
     }
 
-    public Integer getOrderId() {
-        return orderId;
+    public Integer getSellerId() {
+        return sellerId;
     }
 
-    public void setOrderId(Integer orderId) {
-        this.orderId = orderId;
+    public void setSellerId(Integer sellerId) {
+        this.sellerId = sellerId;
     }
 
-    public Integer getAccountId() {
-        return accountId;
+    public Integer getCustomerAcc() {
+        return customerAcc;
     }
 
-    public void setAccountId(Integer accountId) {
-        this.accountId = accountId;
+    public void setCustomerAcc(Integer customerAcc) {
+        this.customerAcc = customerAcc;
     }
 
-    public BigDecimal getAmount() {
+    public Integer getSellerAcc() {
+        return sellerAcc;
+    }
+
+    public void setSellerAcc(Integer sellerAcc) {
+        this.sellerAcc = sellerAcc;
+    }
+
+    public Integer getChainingId() {
+        return chainingId;
+    }
+
+    public void setChainingId(Integer chainingId) {
+        this.chainingId = chainingId;
+    }
+
+    public Integer getAmount() {
         return amount;
     }
 
-    public void setAmount(BigDecimal amount) {
+    public void setAmount(Integer amount) {
         this.amount = amount;
     }
 

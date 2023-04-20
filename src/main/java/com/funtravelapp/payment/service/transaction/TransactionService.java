@@ -2,6 +2,7 @@ package com.funtravelapp.payment.service.transaction;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.funtravelapp.payment.kafka.dto.CreateNotifDTO;
 import com.funtravelapp.payment.kafka.dto.UpdateNotifStatusDTO;
 import com.funtravelapp.payment.kafka.dto.UpdateOrderStatusDTO;
 import com.funtravelapp.payment.kafka.dto.UpdateStatusPaymentDTO;
@@ -56,9 +57,13 @@ public class TransactionService {
 
         // Produce kafka to order service
         ObjectMapper mapper = new ObjectMapper();
-        UpdateOrderStatusDTO kafkaMessage = new UpdateOrderStatusDTO(res.getOrderId(), res.getStatus());
-        String msgJson = mapper.writeValueAsString(kafkaMessage);
+        UpdateOrderStatusDTO updateOrderStatusMsg = new UpdateOrderStatusDTO(res.getOrderId(), res.getStatus());
+        String msgJson = mapper.writeValueAsString(updateOrderStatusMsg);
         kafkaTemplate.send("UpdateStatusOrder", msgJson);
+
+        CreateNotifDTO createNotifMsg = new CreateNotifDTO(res.getOrderId(), res.getUserId());
+        String notifMsg = mapper.writeValueAsString(createNotifMsg);
+        kafkaTemplate.send("CreateNotif", notifMsg);
 
         return res;
     }
