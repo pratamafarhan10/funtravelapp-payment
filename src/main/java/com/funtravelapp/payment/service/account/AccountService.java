@@ -2,11 +2,15 @@ package com.funtravelapp.payment.service.account;
 
 import com.funtravelapp.payment.dto.account.CreateAccountRequest;
 import com.funtravelapp.payment.dto.account.CreateAccountValidator;
+import com.funtravelapp.payment.dto.account.TopUpBalanceRequest;
+import com.funtravelapp.payment.ext.token.GetTokenAPI;
+import com.funtravelapp.payment.ext.token.dto.GetTokenResponse;
 import com.funtravelapp.payment.model.account.Account;
 import com.funtravelapp.payment.repository.account.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +20,8 @@ public class AccountService {
     AccountRepository repository;
     @Autowired
     CreateAccountValidator createAccountValidator;
+    @Autowired
+    GetTokenAPI getTokenAPI;
 
     public Account create(CreateAccountRequest request) throws Exception {
         // Validation
@@ -36,11 +42,12 @@ public class AccountService {
     }
 
     public List<Account> getAll(){
-        return repository.findAll();
+        // Check token, get the user by token
+        return repository.findByUserId(1);
     }
 
-    public Account getById(int id){
-        Optional<Account> opt = repository.findById(id);
+    public Account getById(String accountNumber){
+        Optional<Account> opt = repository.findByNumber(accountNumber);
 
         return opt.orElseThrow();
     }
@@ -77,4 +84,30 @@ public class AccountService {
         repository.deleteById(id);
     }
 
+    public Account topUpBalance(String authorizationHeader, TopUpBalanceRequest request) throws Exception {
+        if (request.getBalance().compareTo(BigDecimal.ZERO) <= 0){
+            throw new Exception("Balance harus lebih dari 0");
+        }
+
+        GetTokenResponse user = getTokenAPI.getToken(authorizationHeader);
+
+        Optional<Account> optionalAccount = repository.findByNumber(request.getAccountNumber());
+
+        if (optionalAccount.isEmpty()){
+            throw new Exception("Account tidak ditemukan");
+        }
+
+        Account acc = optionalAccount.get();
+
+        // User id diganti oleh header
+        if(!acc.getUserId().equals(user.getData().getId())){
+            throw new Exception("Account bukan milik user");
+        }
+
+        acc.setBalance(acc.getBalance().add(request.getBalance()));
+
+        repository.save(acc);
+
+        return acc;
+    }
 }

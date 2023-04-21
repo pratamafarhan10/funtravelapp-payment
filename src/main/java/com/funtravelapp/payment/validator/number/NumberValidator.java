@@ -1,7 +1,6 @@
 package com.funtravelapp.payment.validator.number;
 
 import com.funtravelapp.payment.validator.ValidatorInterface;
-import org.springframework.stereotype.Component;
 
 public class NumberValidator implements ValidatorInterface {
     private final Integer num;
