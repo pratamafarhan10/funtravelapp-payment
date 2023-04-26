@@ -6,6 +6,7 @@ import com.funtravelapp.payment.dto.account.TopUpBalanceRequest;
 import com.funtravelapp.payment.ext.token.GetTokenAPI;
 import com.funtravelapp.payment.ext.token.dto.GetTokenResponse;
 import com.funtravelapp.payment.model.account.Account;
+import com.funtravelapp.payment.model.user.User;
 import com.funtravelapp.payment.repository.account.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class AccountService {
     @Autowired
     GetTokenAPI getTokenAPI;
 
-    public Account create(CreateAccountRequest request) throws Exception {
+    public Account create(String authorizationHeader, User user, CreateAccountRequest request) throws Exception {
         // Validation
         boolean isValid = createAccountValidator.setRequest(request).validate();
         if (!isValid){
@@ -41,18 +42,18 @@ public class AccountService {
         return repository.save(acc);
     }
 
-    public List<Account> getAll(){
+    public List<Account> getByUserId(String authorizationHeader, User user){
         // Check token, get the user by token
-        return repository.findByUserId(1);
+        return repository.findByUserId(user.getId());
     }
 
-    public Account getById(String accountNumber){
+    public Account getById(String authorizationHeader, User user, String accountNumber){
         Optional<Account> opt = repository.findByNumber(accountNumber);
 
         return opt.orElseThrow();
     }
 
-    public Account update(int id, CreateAccountRequest request) throws Exception {
+    public Account update(String authorizationHeader, User user, int id, CreateAccountRequest request) throws Exception {
         // Validation
         boolean isValid = createAccountValidator.setRequest(request).validate();
         if (!isValid){
@@ -76,7 +77,7 @@ public class AccountService {
         return repository.save(acc);
     }
 
-    public void delete(int id) throws Exception {
+    public void delete(String authorizationHeader, User user, int id) throws Exception {
         boolean idExist = repository.existsById(id);
         if (!idExist){
             throw new Exception("Id tidak ditemukan");
@@ -84,12 +85,10 @@ public class AccountService {
         repository.deleteById(id);
     }
 
-    public Account topUpBalance(String authorizationHeader, TopUpBalanceRequest request) throws Exception {
+    public Account topUpBalance(String authorizationHeader, User user, TopUpBalanceRequest request) throws Exception {
         if (request.getBalance().compareTo(BigDecimal.ZERO) <= 0){
             throw new Exception("Balance harus lebih dari 0");
         }
-
-        GetTokenResponse user = getTokenAPI.getToken(authorizationHeader);
 
         Optional<Account> optionalAccount = repository.findByNumber(request.getAccountNumber());
 
@@ -100,7 +99,7 @@ public class AccountService {
         Account acc = optionalAccount.get();
 
         // User id diganti oleh header
-        if(!acc.getUserId().equals(user.getData().getId())){
+        if(!acc.getUserId().equals(user.getId())){
             throw new Exception("Account bukan milik user");
         }
 

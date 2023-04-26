@@ -1,4 +1,4 @@
-package com.funtravelapp.payment.kafka.dto;
+package com.funtravelapp.payment.model.transaction;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -13,8 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class UpdateNotifStatusDTO {
-    private String chainingId;
-    @JsonProperty("is_invoice_sent")
-    private String isInvoiceSent;
+public class SendEmailResponse {
+    @JsonProperty("is_resend_succeed")
+    private boolean isResendSucceed;
 }

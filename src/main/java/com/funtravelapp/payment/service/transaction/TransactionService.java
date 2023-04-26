@@ -1,19 +1,23 @@
 package com.funtravelapp.payment.service.transaction;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.funtravelapp.payment.dto.transaction.PaymentRequest;
+import com.funtravelapp.payment.ext.token.dto.GetTokenResponse;
 import com.funtravelapp.payment.kafka.dto.CreateNotifDTO;
 import com.funtravelapp.payment.kafka.dto.UpdateNotifStatusDTO;
 import com.funtravelapp.payment.kafka.dto.UpdateOrderStatusDTO;
-import com.funtravelapp.payment.kafka.dto.UpdateStatusPaymentDTO;
+import com.funtravelapp.payment.kafka.dto.CreatePaymentDTO;
 import com.funtravelapp.payment.model.account.Account;
+import com.funtravelapp.payment.model.transaction.SendEmailResponse;
 import com.funtravelapp.payment.model.transaction.Transaction;
+import com.funtravelapp.payment.model.user.User;
 import com.funtravelapp.payment.repository.account.AccountRepository;
 import com.funtravelapp.payment.repository.transaction.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.cglib.core.Local;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,41 +35,103 @@ public class TransactionService {
 
 
     public void create(String data) {
-        UpdateStatusPaymentDTO msg;
+        CreatePaymentDTO msg;
         try {
             System.out.println("\nData received: " + data);
             ObjectMapper mapper = new ObjectMapper();
-            msg =  mapper.readValue(data, UpdateStatusPaymentDTO.class);
+            msg = mapper.readValue(data, CreatePaymentDTO.class);
 
-            Optional<Account> optAcc = accountRepository.findByUserId(msg.getUserId());
-            Account acc = optAcc.orElseThrow();
-
-            Transaction trx = new Transaction(msg.getUserId(), msg.getOrderId(), acc.getId(), msg.getAmount(), TransactionStatusEnum.PENDING.toString(), LocalDate.now(), "N");
+            Transaction trx = Transaction.builder()
+                    .customerId(msg.getCustomerId())
+                    .sellerId(msg.getSellerId())
+                    .chainingId(msg.getChainingId())
+                    .amount(msg.getAmount())
+                    .status(TransactionStatusEnum.PENDING.toString())
+                    .date(LocalDate.now())
+                    .isInvoiceSent("N")
+                    .build();
 
             repository.save(trx);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public Transaction updateStatus(int id, TransactionStatusEnum status) throws Exception {
-        // Update status in db
-        Transaction res = repository.updateStatus(id, status.toString());
-        if (res == null) {
-            throw new Exception();
+    @Transactional
+    public Transaction payment(String authorizationHeader, User user, String chainingId, PaymentRequest request) throws Exception {
+        // Check if chaining id exist
+        Optional<Transaction> optTrx = repository.findByChainingId(chainingId);
+        if (optTrx.isEmpty()) {
+            throw new Exception("Transaction not found");
         }
+        // Check if transaction belong to the user
+        Transaction trx = optTrx.get();
+        if (!trx.getCustomerId().equals(user.getId())) {
+            throw new Exception("Unauthorized");
+        }
+
+        // Find customer account
+        Optional<Account> optCustAcc = accountRepository.findByNumber(request.getCustomerAcc());
+        if (optCustAcc.isEmpty()) {
+            throw new Exception("Customer account not found");
+        }
+        Account custAcc = optCustAcc.get();
+
+        // Find seller account
+        List<Account> optSellerAcc = accountRepository.findByUserId(trx.getSellerId());
+        if (optSellerAcc.isEmpty()) {
+            throw new Exception("Transaction failed, seller doesn't have any active account");
+        }
+        Account sellerAcc = optSellerAcc.get(0);
+
+        // Debit credit balance
+        if (custAcc.getBalance().compareTo(trx.getAmount()) < 0) {
+            throw new Exception("Insufficient customer account balance");
+        }
+        custAcc.setBalance(custAcc.getBalance().subtract(trx.getAmount()));
+        sellerAcc.setBalance(sellerAcc.getBalance().add(trx.getAmount()));
+
+        accountRepository.save(custAcc);
+        accountRepository.save(sellerAcc);
+
+        // Set transaction data
+        trx.setSellerAcc(sellerAcc.getNumber());
+        trx.setCustomerAcc(request.getCustomerAcc());
+        trx.setStatus(TransactionStatusEnum.SUCCESS.toString());
+        repository.save(trx);
 
         // Produce kafka to order service
         ObjectMapper mapper = new ObjectMapper();
-        UpdateOrderStatusDTO updateOrderStatusMsg = new UpdateOrderStatusDTO(res.getOrderId(), res.getStatus());
-        String msgJson = mapper.writeValueAsString(updateOrderStatusMsg);
-        kafkaTemplate.send("UpdateStatusOrder", msgJson);
+        String msgJson;
+        try {
+            UpdateOrderStatusDTO updateOrderStatusMsg = UpdateOrderStatusDTO.builder()
+                    .chainingId(chainingId)
+                    .status(TransactionStatusEnum.WAITING_FOR_CONFIRMATION.toString())
+                    .customerAcc(custAcc.getNumber())
+                    .sellerAcc(sellerAcc.getNumber())
+                    .build();
+            msgJson = mapper.writeValueAsString(updateOrderStatusMsg);
+            kafkaTemplate.send("UpdateStatusOrder", msgJson);
+        }catch (Exception e){
+            e.printStackTrace();
+            throw new Exception("Failed to update order status");
+        }
 
-        CreateNotifDTO createNotifMsg = new CreateNotifDTO(res.getOrderId(), res.getUserId());
-        String notifMsg = mapper.writeValueAsString(createNotifMsg);
-        kafkaTemplate.send("CreateNotif", notifMsg);
+        try {
+            // Produce kafka to notif service
+            CreateNotifDTO createNotifMsg = CreateNotifDTO.builder()
+                    .chainingId(chainingId)
+                    .customerId(trx.getCustomerId())
+                    .sellerId(trx.getSellerId())
+                    .build();
+            msgJson = mapper.writeValueAsString(createNotifMsg);
+            kafkaTemplate.send("CreateNotif", msgJson);
+        }catch (Exception e){
+            e.printStackTrace();
+            throw new Exception("Failed to create email notification");
+        }
 
-        return res;
+        return trx;
     }
 
     public void updateInvoiceStatus(String data) {
@@ -73,23 +139,74 @@ public class TransactionService {
         try {
             System.out.println("\nData received: " + data);
             ObjectMapper mapper = new ObjectMapper();
-            msg =  mapper.readValue(data, UpdateNotifStatusDTO.class);
+            msg = mapper.readValue(data, UpdateNotifStatusDTO.class);
 
-            int res = repository.updateInvoiceStatus(msg.getOrderId(), msg.getStatus());
-            if (res == 0){
+            int res = repository.updateInvoiceStatus(msg.getChainingId(), msg.getIsInvoiceSent());
+            if (res == 0) {
                 throw new Exception("Order id not found");
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public List<Transaction> getAll() {
-        return repository.findAll();
+    public List<Transaction> getAllByUserId(String authorizationHeader, User user) throws Exception {
+        if (user.getRole().equalsIgnoreCase("CUSTOMER")) {
+            return repository.findByCustomerId(user.getId());
+        } else if (user.getRole().equalsIgnoreCase("SELLER")) {
+            return repository.findBySellerId(user.getId());
+        }
+        throw new Exception("Unauthorized");
     }
 
-    public Transaction getById(int id) {
-        Optional<Transaction> opt = repository.findById(id);
-        return opt.orElseThrow();
+    public Transaction getById(String authorizationHeader, User user, String chainingId) throws Exception {
+        Optional<Transaction> opt = repository.findByChainingId(chainingId);
+        if (opt.isEmpty()) {
+            throw new Exception("Transaction not found");
+        }
+        Transaction trx = opt.get();
+
+        if (trx.getSellerId().equals(user.getId()) || trx.getCustomerId().equals(user.getId())) {
+            return trx;
+        }
+
+        throw new Exception("Unauthorized");
+    }
+
+    public SendEmailResponse retrySendEmail(String authorizationHeader, User user, String chainingId) throws Exception {
+        Optional<Transaction> opt = repository.findByChainingId(chainingId);
+        if (opt.isEmpty()) {
+            throw new Exception("Transaction not found");
+        }
+        Transaction trx = opt.get();
+
+        if (trx.getSellerId().equals(user.getId()) || trx.getCustomerId().equals(user.getId())) {
+            if (trx.getIsInvoiceSent().equalsIgnoreCase("Y")) {
+                throw new Exception("Transaction notification already sent");
+            }
+            // Produce kafka to notif service
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+
+                CreateNotifDTO createNotifMsg = CreateNotifDTO.builder()
+                        .chainingId(chainingId)
+                        .customerId(trx.getCustomerId())
+                        .sellerId(trx.getSellerId())
+                        .build();
+                String msgJson = mapper.writeValueAsString(createNotifMsg);
+                kafkaTemplate.send("CreateNotif", msgJson);
+
+                return SendEmailResponse.builder()
+                        .isResendSucceed(true)
+                        .build();
+            } catch (Exception e) {
+                return SendEmailResponse.builder()
+                        .isResendSucceed(false)
+                        .build();
+            }
+
+        }
+
+        throw new Exception("Unauthorized");
     }
 }

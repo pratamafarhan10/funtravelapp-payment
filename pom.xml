@@ -60,6 +60,12 @@
 			<scope>provided</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
+			<!--			<scope>runtime</scope>-->
+		</dependency>
+
 	</dependencies>
 
 	<build>

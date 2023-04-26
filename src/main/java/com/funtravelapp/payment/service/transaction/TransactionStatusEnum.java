@@ -2,5 +2,7 @@ package com.funtravelapp.payment.service.transaction;
 
 public enum TransactionStatusEnum {
     PENDING,
-    DONE
+    DONE,
+    SUCCESS,
+    WAITING_FOR_CONFIRMATION
 }

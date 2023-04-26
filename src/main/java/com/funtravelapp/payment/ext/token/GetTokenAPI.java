@@ -3,7 +3,6 @@ package com.funtravelapp.payment.ext.token;
 import com.funtravelapp.payment.ext.token.dto.GetTokenResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 

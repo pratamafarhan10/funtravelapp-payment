@@ -8,9 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -20,23 +18,23 @@ public class AccountController {
     AccountService accountService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> create(@RequestBody CreateAccountRequest request) {
+    public ResponseEntity<?> create(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @RequestBody CreateAccountRequest request) {
         try {
-            return ResponseMapper.ok(null, accountService.create(request));
-        }catch (Exception e){
+            return ResponseMapper.ok(null, accountService.create(authorizationHeader, null, request));
+        } catch (Exception e) {
             return ResponseMapper.badRequest(e.getMessage(), null);
         }
     }
 
     @GetMapping("")
-    public ResponseEntity<?> getByUserId() {
-        return ResponseMapper.ok(null, accountService.getAll());
+    public ResponseEntity<?> getByUserId(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        return ResponseMapper.ok(null, accountService.getByUserId(authorizationHeader, null));
     }
 
     @GetMapping("/{accountNumber}")
-    public ResponseEntity<?> getByAccountNumber(@PathVariable("accountNumber") String accountNumber) {
+    public ResponseEntity<?> getByAccountNumber(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @PathVariable("accountNumber") String accountNumber) {
         try {
-            return ResponseMapper.ok(null, accountService.getById(accountNumber));
+            return ResponseMapper.ok(null, accountService.getById(authorizationHeader, null, accountNumber));
         } catch (NoSuchElementException e) {
             e.printStackTrace();
             return ResponseMapper.badRequest(e.getMessage(), null);
@@ -44,31 +42,31 @@ public class AccountController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<?> update(@PathVariable("id") int id, @RequestBody CreateAccountRequest account){
-        try{
-            return ResponseMapper.ok(null, accountService.update(id, account));
-        }catch (Exception e){
+    public ResponseEntity<?> update(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @PathVariable("id") int id, @RequestBody CreateAccountRequest account) {
+        try {
+            return ResponseMapper.ok(null, accountService.update(authorizationHeader, null, id, account));
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseMapper.badRequest(e.getMessage(), null);
         }
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> delete(@PathVariable("id") int id){
+    public ResponseEntity<?> delete(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @PathVariable("id") int id) {
         try {
-            accountService.delete(id);
+            accountService.delete(authorizationHeader, null, id);
             return ResponseMapper.ok(null, null);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseMapper.badRequest(e.getMessage(), null);
         }
     }
 
     @PostMapping("/top-up/balance")
-    public ResponseEntity<?> topUpBalance(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @RequestBody TopUpBalanceRequest request){
+    public ResponseEntity<?> topUpBalance(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @RequestBody TopUpBalanceRequest request) {
         try {
-            return ResponseMapper.ok(null, accountService.topUpBalance(authorizationHeader, request));
-        }catch (Exception e){
+            return ResponseMapper.ok(null, accountService.topUpBalance(authorizationHeader, null, request));
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseMapper.badRequest(e.getMessage(), null);
         }
