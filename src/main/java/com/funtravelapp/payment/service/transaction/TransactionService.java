@@ -2,7 +2,6 @@ package com.funtravelapp.payment.service.transaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.funtravelapp.payment.dto.transaction.PaymentRequest;
-import com.funtravelapp.payment.ext.token.dto.GetTokenResponse;
 import com.funtravelapp.payment.kafka.dto.CreateNotifDTO;
 import com.funtravelapp.payment.kafka.dto.UpdateNotifStatusDTO;
 import com.funtravelapp.payment.kafka.dto.UpdateOrderStatusDTO;
@@ -14,13 +13,14 @@ import com.funtravelapp.payment.model.user.User;
 import com.funtravelapp.payment.repository.account.AccountRepository;
 import com.funtravelapp.payment.repository.transaction.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -29,10 +29,12 @@ public class TransactionService {
     TransactionRepository repository;
     @Autowired
     AccountRepository accountRepository;
-
     @Autowired
     KafkaTemplate<String, String> kafkaTemplate;
 
+    public DecimalFormat decimalFormat(){
+        return new DecimalFormat("#,###.##");
+    }
 
     public void create(String data) {
         CreatePaymentDTO msg;
@@ -58,7 +60,7 @@ public class TransactionService {
     }
 
     @Transactional
-    public Transaction payment(String authorizationHeader, User user, String chainingId, PaymentRequest request) throws Exception {
+    public Transaction payment(String authorizationHeader, Map<String, Boolean> roles, User user, String chainingId, PaymentRequest request) throws Exception {
         // Check if chaining id exist
         Optional<Transaction> optTrx = repository.findByChainingId(chainingId);
         if (optTrx.isEmpty()) {
@@ -68,6 +70,10 @@ public class TransactionService {
         Transaction trx = optTrx.get();
         if (!trx.getCustomerId().equals(user.getId())) {
             throw new Exception("Unauthorized");
+        }
+
+        if (trx.getStatus().equalsIgnoreCase(TransactionStatusEnum.SUCCESS.toString())){
+            throw new Exception("Transaction already success");
         }
 
         // Find customer account
@@ -86,7 +92,7 @@ public class TransactionService {
 
         // Debit credit balance
         if (custAcc.getBalance().compareTo(trx.getAmount()) < 0) {
-            throw new Exception("Insufficient customer account balance");
+            throw new Exception("Insufficient customer account balance, remaining balance: Rp. " + this.decimalFormat().format(custAcc.getBalance()));
         }
         custAcc.setBalance(custAcc.getBalance().subtract(trx.getAmount()));
         sellerAcc.setBalance(sellerAcc.getBalance().add(trx.getAmount()));
@@ -134,7 +140,8 @@ public class TransactionService {
         return trx;
     }
 
-    public void updateInvoiceStatus(String data) {
+    @Transactional
+    public void updateNotifStatus(String data) {
         UpdateNotifStatusDTO msg;
         try {
             System.out.println("\nData received: " + data);
@@ -150,7 +157,7 @@ public class TransactionService {
         }
     }
 
-    public List<Transaction> getAllByUserId(String authorizationHeader, User user) throws Exception {
+    public List<Transaction> getAllByUserId(String authorizationHeader, Map<String, Boolean> roles, User user) throws Exception {
         if (user.getRole().equalsIgnoreCase("CUSTOMER")) {
             return repository.findByCustomerId(user.getId());
         } else if (user.getRole().equalsIgnoreCase("SELLER")) {
@@ -159,7 +166,7 @@ public class TransactionService {
         throw new Exception("Unauthorized");
     }
 
-    public Transaction getById(String authorizationHeader, User user, String chainingId) throws Exception {
+    public Transaction getById(String authorizationHeader, Map<String, Boolean> roles, User user, String chainingId) throws Exception {
         Optional<Transaction> opt = repository.findByChainingId(chainingId);
         if (opt.isEmpty()) {
             throw new Exception("Transaction not found");
@@ -173,7 +180,7 @@ public class TransactionService {
         throw new Exception("Unauthorized");
     }
 
-    public SendEmailResponse retrySendEmail(String authorizationHeader, User user, String chainingId) throws Exception {
+    public SendEmailResponse retrySendEmail(String authorizationHeader, Map<String, Boolean> roles, User user, String chainingId) throws Exception {
         Optional<Transaction> opt = repository.findByChainingId(chainingId);
         if (opt.isEmpty()) {
             throw new Exception("Transaction not found");
