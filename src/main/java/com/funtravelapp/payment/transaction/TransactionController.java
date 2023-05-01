@@ -20,8 +20,8 @@ public class TransactionController {
     RoleService roleService;
 
     @KafkaListener(
-            topics = "UpdateStatusPayment",
-            groupId = "UpdateStatusPayment-1"
+            topics = "CreatePayment",
+            groupId = "CreatePayment-1"
     )
     public void create(String data) {
         service.create(data);
