@@ -1,7 +1,7 @@
 package com.funtravelapp.payment.ext.token.dto;
 
-import com.funtravelapp.payment.dto.Response;
-import com.funtravelapp.payment.model.user.User;
+import com.funtravelapp.payment.responseMapper.dto.Response;
+import com.funtravelapp.payment.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

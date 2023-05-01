@@ -1,7 +1,6 @@
 package com.funtravelapp.payment.responseMapper;
 
-import com.funtravelapp.payment.dto.Response;
-import lombok.Builder;
+import com.funtravelapp.payment.responseMapper.dto.Response;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;

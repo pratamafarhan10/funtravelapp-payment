@@ -2,7 +2,7 @@ package com.funtravelapp.payment.aop;
 
 import com.funtravelapp.payment.ext.token.GetTokenAPI;
 import com.funtravelapp.payment.ext.token.dto.GetTokenResponse;
-import com.funtravelapp.payment.model.user.User;
+import com.funtravelapp.payment.user.User;
 import com.funtravelapp.payment.validator.string.StringValidator;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -21,10 +21,10 @@ public class AuthenticationAspect {
     @Autowired
     StringValidator stringValidator;
 
-    @Pointcut("execution(* com.funtravelapp.payment.service.account.AccountService.*(..))")
+    @Pointcut("execution(* com.funtravelapp.payment.account.service.AccountService.*(..))")
     private void accountServiceAuth(){}
 
-    @Pointcut("execution(* com.funtravelapp.payment.service.transaction.TransactionService.*(..))")
+    @Pointcut("execution(* com.funtravelapp.payment.transaction.service.TransactionService.*(..))")
     private void transactionServiceAuth(){}
 
     @Around("accountServiceAuth() || transactionServiceAuth()")
