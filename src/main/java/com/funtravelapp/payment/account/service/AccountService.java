@@ -38,8 +38,13 @@ public class AccountService {
             }
         }
 
+        Optional<Account> optAcc = repository.findByNumber(request.getNumber());
+        if (optAcc.isPresent()){
+            throw new Exception("Account with that number already registered");
+        }
+
         Account acc = Account.builder()
-                .userId(request.getUserId())
+                .userId(user.getId())
                 .bank(request.getBank())
                 .number(request.getNumber())
                 .name(request.getName())

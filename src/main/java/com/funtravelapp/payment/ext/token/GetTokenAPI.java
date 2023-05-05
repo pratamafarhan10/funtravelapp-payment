@@ -20,7 +20,7 @@ public class GetTokenAPI {
 
         HttpEntity<String> entity = new HttpEntity<>("body", headers);
 
-        ResponseEntity<?> result = restTemplate.exchange(this.mainURL + "/", HttpMethod.GET, entity, GetTokenResponse.class);
+        ResponseEntity<?> result = restTemplate.exchange(this.mainURL + "/api/auth/user", HttpMethod.GET, entity, GetTokenResponse.class);
 
         if (result.getStatusCode() != HttpStatusCode.valueOf(200)){
             throw new Exception("Unauthorized");

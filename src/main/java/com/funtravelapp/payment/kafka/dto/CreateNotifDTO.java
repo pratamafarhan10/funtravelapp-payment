@@ -16,4 +16,5 @@ public class CreateNotifDTO {
     private String chainingId;
     private Integer customerId;
     private Integer sellerId;
+    private Integer transactionId;
 }

@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class CreateAccountRequest {
-    private Integer userId;
     private String bank;
     private String number;
     private String name;

@@ -17,4 +17,5 @@ public class UpdateNotifStatusDTO {
     private String chainingId;
     @JsonProperty("is_invoice_sent")
     private String isInvoiceSent;
+    private Integer transactionId;
 }

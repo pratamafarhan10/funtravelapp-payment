@@ -11,8 +11,6 @@ import org.springframework.stereotype.Component;
 public class CreateAccountValidator implements ValidatorInterface {
     @Autowired
     StringValidator stringValidator;
-    @Autowired
-    NumberValidator numberValidator;
     private CreateAccountRequest request;
 
     public CreateAccountRequest getRequest() {
@@ -28,11 +26,7 @@ public class CreateAccountValidator implements ValidatorInterface {
 
     @Override
     public boolean isValid() {
-        return numValidator(request.getUserId()) && stringValidator(request.getBank()) && stringValidator(request.getNumber()) && stringValidator(request.getName()) && stringValidator(request.getType());
-    }
-
-    private boolean numValidator(Integer userId){
-        return numberValidator.setNum(userId).isValid();
+        return stringValidator(request.getBank()) && stringValidator(request.getNumber()) && stringValidator(request.getName()) && stringValidator(request.getType());
     }
 
     private boolean stringValidator(String userId){

@@ -20,15 +20,15 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     )
     Transaction updateStatus(@Param("chainingId") String chainingId, @Param("status") String status);
 
-    Optional<Transaction> findByChainingId(String chainingId);
+    List<Transaction> findByChainingId(String chainingId);
 
     List<Transaction> findByCustomerId(Integer customerId);
     List<Transaction> findBySellerId(Integer sellerId);
 
     @Modifying
     @Query(
-            value = "UPDATE transaction set is_invoice_sent = :status WHERE chaining_id = :chainingId",
+            value = "UPDATE transaction set is_invoice_sent = :status WHERE chaining_id = :chainingId AND id = :id",
             nativeQuery = true
     )
-    int updateInvoiceStatus(@Param("chainingId") String chainingId, @Param("status") String status);
+    int updateInvoiceStatus(@Param("chainingId") String chainingId, @Param("status") String status, @Param("id") Integer transactionId);
 }
